@@ -66,6 +66,7 @@ const styles = {
 const navItems = [
   { label: '📄 Tài liệu Knowledge', path: '/documents' },
   { label: '🚨 Báo cáo người dùng', path: '/reports' },
+  { label: '👤 Quản lý người dùng', path: '/users' },
 ]
 
 export default function Layout({ children, title }) {

@@ -6,6 +6,7 @@ import DocumentListPage from './pages/DocumentListPage.jsx'
 import DocumentFormPage from './pages/DocumentFormPage.jsx'
 import ReportListPage from './pages/ReportListPage.jsx'
 import ReportDetailPage from './pages/ReportDetailPage.jsx'
+import UserListPage from './pages/UserListPage.jsx'
 
 export default function App() {
   return (
@@ -34,6 +35,11 @@ export default function App() {
         <Route
           path="/reports/:id"
           element={<PrivateRoute><ReportDetailPage /></PrivateRoute>}
+        />
+
+        <Route
+          path="/users"
+          element={<PrivateRoute><UserListPage /></PrivateRoute>}
         />
 
         <Route path="/" element={<Navigate to="/documents" replace />} />

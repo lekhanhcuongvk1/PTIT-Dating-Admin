@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Layout from '../components/Layout.jsx'
 import { getReport, reviewReport } from '../api/reports.js'
+import { unbanUser } from '../api/moderation.js'
 
 const STATUS_BADGE = {
   pending:   { bg: '#FEF3C7', color: '#92400E', label: 'Chờ xử lý' },
@@ -94,6 +95,8 @@ export default function ReportDetailPage() {
   const [submitting, setSubmitting] = useState(false)
   const [confirmBan, setConfirmBan] = useState(false)
 
+  const reportedUserId = report?.reported?.id
+
   useEffect(() => {
     setLoading(true)
     getReport(id)
@@ -112,6 +115,24 @@ export default function ReportDetailPage() {
       const updated = await getReport(id)
       setReport(updated)
       setConfirmBan(false)
+    } catch (e) {
+      alert('Lỗi: ' + (e.response?.data?.message || e.message))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function handleUnban() {
+    if (!reportedUserId) return
+    setSubmitting(true)
+    try {
+      await unbanUser(reportedUserId, {
+        source: 'manual',
+        reason: 'admin_manual_unban',
+        note: adminNote || null,
+      })
+      const updated = await getReport(id)
+      setReport(updated)
     } catch (e) {
       alert('Lỗi: ' + (e.response?.data?.message || e.message))
     } finally {
@@ -305,7 +326,8 @@ export default function ReportDetailPage() {
               ⚠️ Xác nhận cấm tài khoản của {report.reported?.displayName}?
             </div>
             <div style={{ fontSize: 14, color: '#6b7280', marginBottom: 16 }}>
-              Tài khoản này sẽ không thể đăng nhập và bị ẩn khỏi tất cả người dùng. Thao tác này có thể được hoàn tác bằng cách chọn "Đã xem xét" và cập nhật lại.
+              Tài khoản này sẽ không thể đăng nhập và bị ẩn khỏi tất cả người dùng.
+              Việc mở khóa cần thao tác riêng bằng nút "Mở khóa tài khoản".
             </div>
             <div style={s.btnRow}>
               <button
@@ -322,7 +344,28 @@ export default function ReportDetailPage() {
               >
                 Hủy
               </button>
+              {report.reported?.currentStatus === 'banned' && (
+                <button
+                  style={s.btn('#dbeafe', '#1e40af')}
+                  disabled={submitting}
+                  onClick={handleUnban}
+                >
+                  🔓 Mở khóa tài khoản
+                </button>
+              )}
             </div>
+          </div>
+        )}
+
+        {!confirmBan && report.reported?.currentStatus === 'banned' && (
+          <div style={{ marginTop: 12 }}>
+            <button
+              style={s.btn('#dbeafe', '#1e40af')}
+              disabled={submitting}
+              onClick={handleUnban}
+            >
+              🔓 Mở khóa tài khoản
+            </button>
           </div>
         )}
 
