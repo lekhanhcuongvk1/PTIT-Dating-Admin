@@ -60,16 +60,43 @@ const s = {
   }),
 }
 
+/**
+ * Trang danh sách báo cáo vi phạm từ người dùng.
+ *
+ * Tính năng:
+ *   - Lọc theo status: Tất cả / Chờ xử lý / Đã xử lý / Đã bỏ qua.
+ *   - Phân trang (20 items/trang).
+ *   - Hiển thị badge status và action_taken cho mỗi báo cáo.
+ *   - Bấm "Xem" → navigate tới ReportDetailPage để xét duyệt.
+ *   - Nút "Làm mới" để reload danh sách.
+ *
+ * Badge status:
+ *   pending   → vàng "Chờ xử lý"
+ *   reviewed  → xanh lá "Đã xử lý"
+ *   dismissed → xám "Đã bỏ qua"
+ *
+ * Badge action_taken:
+ *   warned → vàng "Cảnh cáo"
+ *   banned → đỏ "Đã cấm"
+ */
 export default function ReportListPage() {
   const navigate = useNavigate()
   const [reports, setReports] = useState([])
+
+  /** Tổng số báo cáo khớp filter */
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  /** Filter status hiện tại ('all', 'pending', 'reviewed', 'dismissed') */
   const [status, setStatus] = useState('all')
   const [page, setPage] = useState(1)
   const limit = 20
 
+  /**
+   * Load danh sách báo cáo theo filter và trang hiện tại.
+   * Dùng useCallback để useEffect có thể track chính xác khi nào cần reload.
+   */
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)
@@ -88,6 +115,11 @@ export default function ReportListPage() {
 
   const totalPages = Math.ceil(total / limit)
 
+  /**
+   * Format ISO timestamp thành dd/mm/yyyy HH:MM (locale vi-VN).
+   * @param {string|null} iso
+   * @returns {string} Chuỗi đã format hoặc '—'
+   */
   function formatDate(iso) {
     if (!iso) return '—'
     return new Date(iso).toLocaleString('vi-VN', {
@@ -96,6 +128,10 @@ export default function ReportListPage() {
     })
   }
 
+  /**
+   * Component hiển thị avatar + tên trong ô bảng (reporter / reported).
+   * @param {{ user: { avatarUrl?: string, displayName?: string } }} props
+   */
   function UserCell({ user }) {
     return (
       <div style={s.userCell}>

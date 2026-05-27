@@ -134,17 +134,48 @@ const s = {
   },
 }
 
+/**
+ * Trang danh sách tài liệu Knowledge Base chatbot.
+ *
+ * Tính năng:
+ *   - Tìm kiếm full-text theo tiêu đề và nội dung.
+ *   - Lọc theo danh mục (category).
+ *   - Phân trang (15 items/trang).
+ *   - Hiển thị trạng thái embedding (✓ Đã nhúng / ⏳ Đang xử lý).
+ *   - Sửa, xóa, và force re-embed tài liệu.
+ *
+ * Tìm kiếm: commit khi submit form (không search theo từng keystroke).
+ * searchInput là giá trị tạm thời trong input; search là giá trị đã commit.
+ *
+ * Embedding status:
+ *   - embedding_updated_at != null → đã embed, chatbot có thể dùng.
+ *   - embedding_updated_at = null  → chưa embed (pending) hoặc đang xử lý.
+ */
 export default function DocumentListPage() {
   const navigate = useNavigate()
+
+  /** Danh sách tài liệu của trang hiện tại */
   const [docs, setDocs] = useState([])
+
+  /** Tổng số tài liệu khớp filter (không phụ thuộc page) */
   const [total, setTotal] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
   const [page, setPage] = useState(1)
+
+  /** Từ khóa tìm kiếm đã commit (submit form) */
   const [search, setSearch] = useState('')
+
   const [category, setCategory] = useState('')
   const [loading, setLoading] = useState(false)
+
+  /** Giá trị tạm thời trong ô input (chưa commit) */
   const [searchInput, setSearchInput] = useState('')
 
+  /**
+   * Fetch danh sách tài liệu từ API theo các filter hiện tại.
+   * Dùng useCallback để tránh tạo lại function mỗi render,
+   * và để useEffect có thể track dependency chính xác.
+   */
   const fetchDocs = useCallback(async () => {
     setLoading(true)
     try {
@@ -161,12 +192,22 @@ export default function DocumentListPage() {
 
   useEffect(() => { fetchDocs() }, [fetchDocs])
 
+  /**
+   * Commit từ khóa tìm kiếm và reset về trang 1.
+   * Tách riêng searchInput và search để tránh gọi API theo từng keystroke.
+   */
   function handleSearchSubmit(e) {
     e.preventDefault()
     setSearch(searchInput)
     setPage(1)
   }
 
+  /**
+   * Soft-delete tài liệu sau khi confirm.
+   * Tài liệu bị ẩn với chatbot nhưng dữ liệu vẫn còn trong DB.
+   *
+   * @param {{ id: string, title: string }} doc
+   */
   async function handleDelete(doc) {
     if (!confirm(`Xoá tài liệu "${doc.title}"?\nHành động này không thể hoàn tác.`)) return
     try {
@@ -177,6 +218,12 @@ export default function DocumentListPage() {
     }
   }
 
+  /**
+   * Force re-embed tài liệu (dùng khi embedding lỗi hoặc cần refresh vector).
+   * Đặt embedding = null → enqueue job Gemini embedding mới.
+   *
+   * @param {{ id: string }} doc
+   */
   async function handleReembed(doc) {
     try {
       await reembedDocument(doc.id)
@@ -186,6 +233,11 @@ export default function DocumentListPage() {
     }
   }
 
+  /**
+   * Format ISO date string thành dd/mm/yyyy (locale vi-VN).
+   * @param {string|null} iso
+   * @returns {string}
+   */
   function formatDate(iso) {
     if (!iso) return '—'
     return new Date(iso).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })

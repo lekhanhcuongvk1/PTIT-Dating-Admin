@@ -71,13 +71,33 @@ const styles = {
   },
 }
 
+/**
+ * Trang đăng nhập admin bằng email + password (local account).
+ *
+ * Luồng:
+ *   1. Admin nhập email + password → bấm "Đăng nhập admin"
+ *   2. Gọi adminLogin() → nhận JWT từ backend
+ *   3. Lưu JWT bằng saveToken() → navigate về /documents
+ *
+ * Tài khoản admin được tạo bởi script seed ở backend.
+ * Không dùng Microsoft OAuth ở trang này.
+ */
 export default function LoginPage() {
   const navigate = useNavigate()
+
+  /** true khi đang gọi API đăng nhập */
   const [loading, setLoading] = useState(false)
+
+  /** Thông báo lỗi hiển thị dưới form */
   const [error, setError] = useState('')
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
+  /**
+   * Xử lý đăng nhập: gọi API → lưu token → redirect.
+   * Lỗi được hiển thị trực tiếp trong form (không throw).
+   */
   async function handleLogin() {
     setLoading(true)
     setError('')

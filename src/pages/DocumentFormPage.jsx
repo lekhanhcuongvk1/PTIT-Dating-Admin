@@ -83,21 +83,49 @@ const s = {
   },
 }
 
+/**
+ * Trang tạo mới hoặc chỉnh sửa tài liệu Knowledge Base.
+ *
+ * Dùng chung cho 2 route:
+ *   - /documents/new       → tạo mới (isEdit = false)
+ *   - /documents/:id/edit  → chỉnh sửa (isEdit = true, id = params.id)
+ *
+ * Khi tạo/cập nhật thành công:
+ *   - Backend tự động enqueue BullMQ job embed (Gemini embedding-001).
+ *   - Hiển thị thông báo thành công → redirect về /documents sau 1.5 giây.
+ *
+ * Khi chỉnh sửa: load document hiện tại → pre-fill form.
+ * Validate: title và content không được để trống.
+ */
 export default function DocumentFormPage() {
   const navigate = useNavigate()
   const { id } = useParams()
+
+  /** true khi đang ở chế độ chỉnh sửa (route /documents/:id/edit) */
   const isEdit = Boolean(id)
 
+  /** Dữ liệu form (title, content, category) */
   const [form, setForm] = useState({
     title: '',
     content: '',
     category: '',
   })
+
+  /** true khi đang load document cũ (chỉ ở chế độ edit) */
   const [loading, setLoading] = useState(isEdit)
+
+  /** true khi đang gọi API lưu */
   const [saving, setSaving] = useState(false)
+
+  /** Thông báo lỗi validation hoặc API */
   const [error, setError] = useState('')
+
+  /** Thông báo thành công (hiển thị trước khi redirect) */
   const [success, setSuccess] = useState('')
 
+  /**
+   * Load document hiện tại để pre-fill form (chỉ chạy ở chế độ edit).
+   */
   useEffect(() => {
     if (!isEdit) return
     getDocument(id)
@@ -112,10 +140,23 @@ export default function DocumentFormPage() {
       .finally(() => setLoading(false))
   }, [id, isEdit])
 
+  /**
+   * Tạo onChange handler cho từng field của form.
+   * Dùng currying để tránh tạo nhiều hàm riêng cho từng field.
+   *
+   * @param {'title'|'content'|'category'} field
+   * @returns {function} onChange event handler
+   */
   function handleChange(field) {
     return (e) => setForm((f) => ({ ...f, [field]: e.target.value }))
   }
 
+  /**
+   * Submit form: validate → tạo mới hoặc cập nhật tài liệu.
+   *
+   * Sau khi thành công: hiển thị thông báo → redirect về /documents sau 1.5s.
+   * Lỗi API được hiển thị trong form mà không redirect.
+   */
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')

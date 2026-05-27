@@ -3,8 +3,24 @@ import { useNavigate } from 'react-router-dom'
 import { exchangeCode } from '../api/auth.js'
 import { saveToken } from '../hooks/useAuth.js'
 
+/**
+ * Trang xử lý callback sau khi Microsoft OAuth redirect về.
+ *
+ * URL nhận: /oauth/callback?code=<authorization_code>
+ *
+ * Luồng:
+ *   1. Đọc `code` từ query string.
+ *   2. Gọi exchangeCode(code) → backend đổi lấy JWT.
+ *   3. Decode JWT → kiểm tra role = 'admin'.
+ *   4. Nếu hợp lệ: lưu token → navigate về /documents.
+ *   5. Nếu lỗi: hiển thị thông báo lỗi + nút quay lại login.
+ *
+ * Chạy một lần duy nhất khi component mount (useEffect với deps [navigate]).
+ */
 export default function OAuthCallbackPage() {
   const navigate = useNavigate()
+
+  /** Thông báo lỗi (null/empty = đang xử lý) */
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -20,7 +36,7 @@ export default function OAuthCallbackPage() {
       .then((data) => {
         if (!data.token) throw new Error('Không nhận được token')
 
-        // Decode JWT để kiểm tra role
+        // Decode JWT (client-side, không verify) để kiểm tra role trước khi lưu
         const payload = JSON.parse(atob(data.token.split('.')[1]))
         if (payload.role !== 'admin') {
           setError('Tài khoản này không có quyền truy cập admin')

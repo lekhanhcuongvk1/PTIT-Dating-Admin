@@ -1,3 +1,26 @@
+/**
+ * @fileoverview Layout — layout chung cho tất cả trang admin (sidebar + main content).
+ *
+ * Cấu trúc:
+ *   ┌─────────────┬───────────────────────────────────┐
+ *   │  Sidebar    │  Header (title)                   │
+ *   │  (220px)    ├───────────────────────────────────┤
+ *   │  - Logo     │  Main content (children)          │
+ *   │  - Nav      │                                   │
+ *   │  - Logout   │                                   │
+ *   └─────────────┴───────────────────────────────────┘
+ *
+ * Navigation items (navItems):
+ *   - /documents  — Quản lý tài liệu Knowledge Base chatbot
+ *   - /reports    — Xem và xét duyệt báo cáo vi phạm
+ *   - /users      — Quản lý và kiểm duyệt tài khoản người dùng
+ *
+ * Active state: highlight nav item khi pathname bắt đầu bằng path tương ứng.
+ * Logout: xóa token → navigate về /login.
+ *
+ * @param {{ children: React.ReactNode, title?: string }} props
+ */
+
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { logout } from '../hooks/useAuth.js'
 
@@ -69,10 +92,20 @@ const navItems = [
   { label: '👤 Quản lý người dùng', path: '/users' },
 ]
 
+/**
+ * Layout component bọc tất cả các page admin với sidebar và header chung.
+ *
+ * @param {object}           props
+ * @param {React.ReactNode}  props.children - Nội dung trang (main content)
+ * @param {string}           [props.title]  - Tiêu đề hiển thị trên header (optional)
+ */
 export default function Layout({ children, title }) {
   const location = useLocation()
   const navigate = useNavigate()
 
+  /**
+   * Đăng xuất: xóa token khỏi localStorage rồi redirect về /login.
+   */
   function handleLogout() {
     logout()
     navigate('/login')
